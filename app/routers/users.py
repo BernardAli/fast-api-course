@@ -1,5 +1,5 @@
 from typing import List
-from fastapi import status, HTTPException, Depends, APIRouter
+from fastapi import status, HTTPException, Depends, APIRouter, Response
 from .. import models, schemas, utils
 from ..database import get_db
 from sqlalchemy.orm import Session
@@ -36,3 +36,27 @@ def get_user(id: int, db: Session = Depends(get_db)):
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"User with id: {id} was not found")
     return user
+
+
+@router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_user(id: int, db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.id == id)
+    if not user.first():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"User with id: {id} was not found")
+    user.delete(synchronize_session=False)
+    db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.put("/{id}", response_model=schemas.UserResponse)
+def update_user(id: int, updated_user: schemas.UserCreate, db: Session = Depends(get_db)):
+    user_query = db.query(models.User).filter(models.User.id == id)
+
+    hashed_password = utils.hash(updated_user.password)
+    updated_user.password = hashed_password
+
+    if user_query.first() is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"User with id: {id} was not found")
+    user_query.update(updated_user.dict(), synchronize_session=False)
+    db.commit()
+    return user_query.first()
