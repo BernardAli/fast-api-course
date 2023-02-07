@@ -20,6 +20,7 @@ class UpdatePost(PostBase):
 
 
 class PostResponse(BaseModel):
+    id: int
     title: str
     content: str
     published: Optional[bool] = True
@@ -34,14 +35,27 @@ class UserBase(BaseModel):
 
 
 class UserCreate(UserBase):
-    email: EmailStr
     password: str
 
 
 class UserResponse(BaseModel):
     id: int
-    email: str
+    email: EmailStr
     created_at: datetime
 
     class Config:
         orm_mode = True
+
+
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str
+
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+
+class TokenData(BaseModel):
+    id: Optional[str] = None

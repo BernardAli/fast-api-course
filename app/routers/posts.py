@@ -2,7 +2,7 @@ from typing import List
 from fastapi import status, HTTPException, Depends, APIRouter, Response
 from sqlalchemy.orm import Session
 
-from .. import models, schemas
+from .. import models, schemas, OAuth2
 from ..database import get_db
 
 router = APIRouter(
@@ -21,7 +21,7 @@ def get_posts(db: Session = Depends(get_db)):
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=schemas.PostResponse)
-def create_post(post: schemas.CreatePost, db: Session = Depends(get_db)):
+def create_post(post: schemas.CreatePost, db: Session = Depends(get_db), get_current_user: int = Depends(OAuth2.get_current_user)):
     # post_dict = post.dict()
     # post_dict['id'] = randrange(0, 10e10)
     # my_posts.append(post_dict)
@@ -37,7 +37,7 @@ def create_post(post: schemas.CreatePost, db: Session = Depends(get_db)):
 
 
 @router.get("/{id}", status_code=status.HTTP_200_OK, response_model=schemas.PostResponse)
-def get_post(id: int, db: Session = Depends(get_db)):
+def get_post(id: int, db: Session = Depends(get_db), get_current_user: int = Depends(OAuth2.get_current_user)):
     # post = find_post(id)
     # cursor.execute("""SELECT * FROM posts WHERE id=%s """, (int(id), ))
     # post = cursor.fetchone()
@@ -50,7 +50,7 @@ def get_post(id: int, db: Session = Depends(get_db)):
 
 
 @router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_post(id: int, db: Session = Depends(get_db)):
+def delete_post(id: int, db: Session = Depends(get_db), get_current_user: int = Depends(OAuth2.get_current_user)):
     # deleting post
     # find the index of the array that has the required ID
     # my_posts.pop(index)
@@ -70,7 +70,7 @@ def delete_post(id: int, db: Session = Depends(get_db)):
 
 
 @router.put("/{id}", response_model=schemas.PostResponse)
-def update_post(id: int, updated_post: schemas.UpdatePost, db: Session = Depends(get_db)):
+def update_post(id: int, updated_post: schemas.UpdatePost, db: Session = Depends(get_db), get_current_user: int = Depends(OAuth2.get_current_user)):
     # index = find_index_post(id)
     # cursor.execute("""UPDATE posts SET title=%s, content=%s, published=%s where id=%s RETURNING *""",
     #                (post.title, post.content, post.published, int(id) ),)
