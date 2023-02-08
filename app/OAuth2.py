@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 
 from . import schemas, database, models
+from .config import settings
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl='login')
 
@@ -14,9 +15,9 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl='login')
 # EXPIRATION_TIME
 
 
-SECRET_KEY = "82fcdf6c0a8963c3522fa71a08ba4040e68f39c484f9aafffc66e7d3c011c6ec"
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+SECRET_KEY = settings.secret_key
+ALGORITHM = settings.algorithm
+ACCESS_TOKEN_EXPIRE_MINUTES = settings.access_token_expire_minutes
 
 
 def create_access_token(data: dict):
