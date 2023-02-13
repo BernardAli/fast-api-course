@@ -1,5 +1,6 @@
 from typing import List, Optional
 from fastapi import status, HTTPException, Depends, APIRouter, Response
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from .. import models, schemas, OAuth2
@@ -11,14 +12,18 @@ router = APIRouter(
 )
 
 
-@router.get("/", response_model=List[schemas.PostResponse])
+@router.get("/", response_model=List[schemas.PostOut])
 def get_posts(db: Session = Depends(get_db), get_current_user: int = Depends(OAuth2.get_current_user),
               limit: int = 10, skip: int = 0, search: Optional[str] = ""):
     # cursor.execute("""SELECT * FROM posts""")
     # posts = cursor.fetchall()
     # print(limit)
     # print(search)
-    posts = db.query(models.Post).filter(models.Post.owner_id == get_current_user.id).\
+    # posts = db.query(models.Post).filter(models.Post.owner_id == get_current_user.id).\
+    #     filter(models.Post.title.contains(search)).limit(limit).offset(skip).all()
+    posts = db.query(models.Post, func.count(models.Vote.post_id).label("votes")) \
+        .join(models.Vote, models.Vote.post_id == models.Post.id, isouter=True).group_by(models.Post.id).\
+        filter(models.Post.owner_id == get_current_user.id).\
         filter(models.Post.title.contains(search)).limit(limit).offset(skip).all()
     # print(posts)
     return posts
@@ -41,12 +46,15 @@ def create_post(post: schemas.CreatePost, db: Session = Depends(get_db), get_cur
     return new_post
 
 
-@router.get("/{id}", status_code=status.HTTP_200_OK, response_model=schemas.PostResponse)
+@router.get("/{id}", status_code=status.HTTP_200_OK )
 def get_post(id: int, db: Session = Depends(get_db)):
     # post = find_post(id)
     # cursor.execute("""SELECT * FROM posts WHERE id=%s """, (int(id), ))
     # post = cursor.fetchone()
-    post = db.query(models.Post).filter(models.Post.id == id).first()
+    # post = db.query(models.Post).filter(models.Post.id == id).first()
+    post = db.query(models.Post, func.count(models.Vote.post_id).label("votes")) \
+        .join(models.Vote, models.Vote.post_id == models.Post.id, isouter=True).group_by(models.Post.id)\
+        .filter(models.Post.id == id).first()
     if not post:
         # response.status_code = status.HTTP_404_NOT_FOUND
         # return {"message": f"Post with id: {id} was not found"}
@@ -62,7 +70,7 @@ def delete_post(id: int, db: Session = Depends(get_db), get_current_user: int = 
     # index = find_index_post(id)
     # cursor.execute("""DELETE FROM posts WHERE id=%s RETURNING *""", (int(id),))
     # index = cursor.fetchone()
-    post = post = db.query(models.Post).filter(models.Post.id == id)
+    post = post = db.query(models.Post).filter(models.Post.id == id).filter(models.Post.owner_id == get_current_user.id)
     if not post.first():
         # response.status_code = status.HTTP_404_NOT_FOUND
         # return {"message": f"Post with id: {id} was not found"}
